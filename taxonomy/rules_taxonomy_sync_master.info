@@ -1,0 +1,8 @@
+; $Id$
+name = Taxonomy Sync - Master
+description = Provides web hooks for synching a taxonomy terms.
+package = Rules Use Cases
+version = VERSION
+core = 7.x
+files[] = rules_taxonomy_sync_master.module
+dependencies[] = rules_web_hook

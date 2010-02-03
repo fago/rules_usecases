@@ -1,0 +1,80 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Web Test Module.
+ */
+
+/**
+ * Implementation of hook_default_rules_web_hook().
+ */
+function rules_taxonomy_sync_default_rules_web_hook() {
+  $hook = new EntityDB(array(), 'rules_web_hook');
+  $hook->name = 'term_insert';
+  $hook->label = 'A term has been created';
+  $hook->active = TRUE;
+  $hook->variables = array(
+    'term' => array(
+      'type' => 'taxonomy_term',
+      'label' => 'Term',
+    ),
+  );
+  $hooks[$hook->name] = $hook;
+  
+  $hook = clone $hook;
+  $hook->name = 'term_update';
+  $hook->label = 'A term has been updated';
+  $hooks[$hook->name] = $hook;
+  
+  $hook = clone $hook;
+  $hook->name = 'term_delete';
+  $hook->label = 'A term has been deleted';
+  $hooks[$hook->name] = $hook;
+
+  return $hooks;
+}
+
+/**
+ * Implements hook_default_rules_configuration().
+ */
+function rules_taxonomy_sync_default_rules_configuration() {
+  $rule = rules_reaction_rule();
+  $rule->label = 'Invoke term creation web hook';
+  $rule->active = TRUE;
+  $rule->event('taxonomy_term_insert')
+       ->condition('data_is', array('data:select' => 'term:vocabulary:machine_name', 'value' => 'rules_taxonomy_sync'))
+       ->action('web_hook_invoke', array('hook' => 'term_insert', 'param_term:select' => 'term'));
+  $configs['rules_taxonomy_sync_insert'] = $rule;
+  
+  $rule = rules_reaction_rule();
+  $rule->label = 'Invoke term update web hook';
+  $rule->active = TRUE;
+  $rule->event('taxonomy_term_update')
+       ->condition('data_is', array('data:select' => 'term:vocabulary:machine_name', 'value' => 'rules_taxonomy_sync'))
+       ->action('web_hook_invoke', array('hook' => 'term_update', 'param_term:select' => 'term'));
+  $configs['rules_taxonomy_sync_update'] = $rule;
+  
+  $rule = rules_reaction_rule();
+  $rule->label = 'Invoke term delete web hook';
+  $rule->active = TRUE;
+  $rule->event('taxonomy_term_delete')
+       ->condition('data_is', array('data:select' => 'term:vocabulary:machine_name', 'value' => 'rules_taxonomy_sync'))
+       ->action('web_hook_invoke', array('hook' => 'term_delete', 'param_term:select' => 'term'));
+  $configs['rules_taxonomy_sync_delete'] = $rule;
+  
+  return $configs;
+}
+
+/**
+ * Implements hook_install().
+ */
+function rules_taxonomy_sync_install() {
+  $vocabulary = (object) array(
+    'name' => 'Rules Sync Taxonomy',
+    'hierarchy' => TRUE,
+    'description' => '',
+    'machine_name' => 'rules_taxonomy_sync',
+    'help' => '',
+  );
+  taxonomy_vocabulary_save($vocabulary);
+}
