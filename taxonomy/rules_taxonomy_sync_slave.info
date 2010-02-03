@@ -1,0 +1,8 @@
+; $Id$
+name = Taxonomy Sync - Slave
+description = Locally creates copies of the master's terms.
+package = Rules Use Cases
+version = VERSION
+core = 7.x
+files[] = rules_taxonomy_sync_slave.module
+dependencies[] = rules_web_remote

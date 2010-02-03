@@ -8,7 +8,7 @@
 /**
  * Implementation of hook_default_rules_web_hook().
  */
-function rules_taxonomy_sync_default_rules_web_hook() {
+function rules_taxonomy_sync_master_default_rules_web_hook() {
   $hook = new EntityDB(array(), 'rules_web_hook');
   $hook->name = 'term_insert';
   $hook->label = 'A term has been created';
@@ -37,14 +37,14 @@ function rules_taxonomy_sync_default_rules_web_hook() {
 /**
  * Implements hook_default_rules_configuration().
  */
-function rules_taxonomy_sync_default_rules_configuration() {
+function rules_taxonomy_sync_master_default_rules_configuration() {
   $rule = rules_reaction_rule();
   $rule->label = 'Invoke term creation web hook';
   $rule->active = TRUE;
   $rule->event('taxonomy_term_insert')
        ->condition('data_is', array('data:select' => 'term:vocabulary:machine_name', 'value' => 'rules_taxonomy_sync'))
        ->action('web_hook_invoke', array('hook' => 'term_insert', 'param_term:select' => 'term'));
-  $configs['rules_taxonomy_sync_insert'] = $rule;
+  $configs['rules_taxonomy_sync_master_insert'] = $rule;
   
   $rule = rules_reaction_rule();
   $rule->label = 'Invoke term update web hook';
@@ -52,7 +52,7 @@ function rules_taxonomy_sync_default_rules_configuration() {
   $rule->event('taxonomy_term_update')
        ->condition('data_is', array('data:select' => 'term:vocabulary:machine_name', 'value' => 'rules_taxonomy_sync'))
        ->action('web_hook_invoke', array('hook' => 'term_update', 'param_term:select' => 'term'));
-  $configs['rules_taxonomy_sync_update'] = $rule;
+  $configs['rules_taxonomy_sync_master_update'] = $rule;
   
   $rule = rules_reaction_rule();
   $rule->label = 'Invoke term delete web hook';
@@ -60,7 +60,7 @@ function rules_taxonomy_sync_default_rules_configuration() {
   $rule->event('taxonomy_term_delete')
        ->condition('data_is', array('data:select' => 'term:vocabulary:machine_name', 'value' => 'rules_taxonomy_sync'))
        ->action('web_hook_invoke', array('hook' => 'term_delete', 'param_term:select' => 'term'));
-  $configs['rules_taxonomy_sync_delete'] = $rule;
+  $configs['rules_taxonomy_sync_master_delete'] = $rule;
   
   return $configs;
 }
@@ -68,7 +68,7 @@ function rules_taxonomy_sync_default_rules_configuration() {
 /**
  * Implements hook_install().
  */
-function rules_taxonomy_sync_install() {
+function rules_taxonomy_sync_master_install() {
   $vocabulary = (object) array(
     'name' => 'Rules Sync Taxonomy',
     'hierarchy' => TRUE,
