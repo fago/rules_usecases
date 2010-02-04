@@ -18,6 +18,11 @@ function rules_taxonomy_sync_slave_default_rules_web_remote() {
     CURLOPT_SSL_VERIFYPEER => FALSE, // For testing skip ssl verification.
     CURLOPT_SSL_VERIFYHOST => FALSE, // For testing skip ssl verification.
   );
+  // Hack: Use the same auth as for this site for the remote.
+  if ($auth = rules_web_remote_get_http_auth()) {
+    $remote->settings['curl options'][CURLOPT_USERPWD] = !empty($auth['username']) ? $auth['username'] . ':' . $auth['password'] : '';
+    $remote->settings['curl options'][CURLOPT_HTTPAUTH] = !empty($auth['method']) ? (int)$auth['method'] : '';
+  }
   if ($remote->url) {
     $remotes[$remote->name] = $remote;
     return $remotes;
