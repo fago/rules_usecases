@@ -14,10 +14,7 @@ function rules_taxonomy_sync_slave_default_rules_web_remote() {
   $remote->label = 'The taxonomy master';
   $remote->url = variable_get('rules_taxonomy_sync_master_url', FALSE);
   $remote->type = 'rules_web_hook';
-  $remote->settings['curl options'] = array(
-    CURLOPT_SSL_VERIFYPEER => FALSE, // For testing skip ssl verification.
-    CURLOPT_SSL_VERIFYHOST => FALSE, // For testing skip ssl verification.
-  );
+
   // Hack: Use the same auth as for this site for the remote.
   if ($auth = rules_web_remote_get_http_auth()) {
     $remote->settings['curl options'][CURLOPT_USERPWD] = !empty($auth['username']) ? $auth['username'] . ':' . $auth['password'] : '';
@@ -39,11 +36,11 @@ function rules_taxonomy_sync_slave_default_rules_configuration() {
   $rule->label = 'Create local copy of term';
   $rule->active = TRUE;
   $rule->event('rules_web_term_master_term_insert')
-       ->action('data_fetch', array('type' => 'taxonomy_vocabulary', 'param_id' => $vocab->vid))
-       ->action('data_create', array(
+       ->action('entity_fetch', array('type' => 'taxonomy_vocabulary', 'id' => $vocab->vid))
+       ->action('entity_create', array(
          'type' => 'taxonomy_term',
          'param_name:select' => 'term:name',
-         'param_vocabulary:select' => 'data_fetched'
+         'param_vocabulary:select' => 'entity_fetched'
        ));
   $configs['rules_taxonomy_sync_slave_insert'] = $rule;
   
