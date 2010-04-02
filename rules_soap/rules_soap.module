@@ -41,28 +41,6 @@ function rules_soap_default_rules_web_remote() {
 }
 
 /**
- * Implements hook_default_rules_configuration().
- */
-function rules_soap_default_rules_configuration() {
-  return;
-  $vocab = reset(taxonomy_vocabulary_load_multiple(FALSE, array('machine_name' => 'rules_taxonomy_sync')));
-
-  $rule = rules_reaction_rule();
-  $rule->label = 'Create local copy of term';
-  $rule->active = TRUE;
-  $rule->event('rules_web_term_master_term_insert')
-       ->action('entity_fetch', array('type' => 'taxonomy_vocabulary', 'id' => $vocab->vid))
-       ->action('entity_create', array(
-         'type' => 'taxonomy_term',
-         'param_name:select' => 'term:name',
-         'param_vocabulary:select' => 'entity_fetched'
-       ));
-  $configs['rules_soap_insert'] = $rule;
-  
-  return $configs;
-}
-
-/**
  * Implements hook_rules_endpoint_types().
  */
 function rules_soap_rules_endpoint_types() {
