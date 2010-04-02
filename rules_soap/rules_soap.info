@@ -1,0 +1,9 @@
+; $Id$
+name = Rules SOAP Support
+description = A prototype implementing a SOAP endpoint and a example remote site using it.
+package = Rules Use Cases
+version = VERSION
+core = 7.x
+files[] = rules_soap.module
+files[] = rules_soap.test
+dependencies[] = rules_web_remote

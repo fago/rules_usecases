@@ -1,0 +1,38 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules SOAP Tests.
+ */
+
+class RulesSOAPTestCase extends DrupalWebTestCase {
+
+  static function getInfo() {
+    return array(
+      'name' => 'Rules SOAP',
+      'description' => 'Tests invoking a SOAP service using a rules action.',
+      'group' => 'Rules',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('rules_soap');
+    RulesLog::logger()->clear();
+  }
+  
+  /**
+   * Tests invocing the geocoder service, which is provided by the module as
+   * default remote site. We geocode an address and make sure the returned ZIP
+   * is right.
+   */
+  function testServiceInvocation() {
+    $rule = rule(array('address' => array('type' => 'text')));
+    $rule->action('rules_web_geocoder_geocode_address', array('param_address:select' => 'address'))
+         ->action('drupal_message', array('message:select' => 'var:0:zip'))
+         ->execute('1600 Pennsylvania Av, Washington, DC');
+    
+    RulesLog::logger()->checkLog();
+    $msg = drupal_get_messages();
+    $this->assertEqual(array_pop($msg['status']), '20502', 'SOAP service has been invoked.');
+  }
+}

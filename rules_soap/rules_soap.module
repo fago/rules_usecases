@@ -1,0 +1,181 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Web Test Module.
+ */
+
+/**
+ * Implements hook_default_rules_web_remote().
+ */
+function rules_soap_default_rules_web_remote() {
+  $remote = new RulesWebRemote();
+  $remote->name = 'geocoder';
+  $remote->label = 'Geocoder.us';
+  $remote->url = 'http://geocoder.us/dist/eg/clients/GeoCoderPHP.wsdl';
+  $remote->type = 'soap';
+  
+  // Add info about the SOAP service, which the user has to provide via the UI.
+  $operation['label'] = 'Geocode an address';
+  $operation['parameter']['address'] = array('type' => 'text');
+  $operation['provides']['address_results'] = array(
+    'type' => 'list<struct>',
+    'data info' => array(
+      'properties' => array(
+        'number' => array('type' => 'integer'),
+        'zip' => array('type' => 'integer'),
+        'suffix' => array('type' => 'text'),
+        'prefix' => array('type' => 'text'),
+        'type' => array('type' => 'text'),
+        'street' => array('type' => 'text'),
+        'state' => array('type' => 'text'),
+        'city' => array('type' => 'text'),
+        'lat' => array('type' => 'decimal'),
+        'long' => array('type' => 'decimal'),
+      ),
+    ),
+  );
+  $remote->settings['operations']['geocode_address'] = $operation;
+  $remotes[$remote->name] = $remote;
+  return $remotes;
+}
+
+/**
+ * Implements hook_default_rules_configuration().
+ */
+function rules_soap_default_rules_configuration() {
+  return;
+  $vocab = reset(taxonomy_vocabulary_load_multiple(FALSE, array('machine_name' => 'rules_taxonomy_sync')));
+
+  $rule = rules_reaction_rule();
+  $rule->label = 'Create local copy of term';
+  $rule->active = TRUE;
+  $rule->event('rules_web_term_master_term_insert')
+       ->action('entity_fetch', array('type' => 'taxonomy_vocabulary', 'id' => $vocab->vid))
+       ->action('entity_create', array(
+         'type' => 'taxonomy_term',
+         'param_name:select' => 'term:name',
+         'param_vocabulary:select' => 'entity_fetched'
+       ));
+  $configs['rules_soap_insert'] = $rule;
+  
+  return $configs;
+}
+
+/**
+ * Implements hook_rules_endpoint_types().
+ */
+function rules_soap_rules_endpoint_types() {
+  return array(
+    'soap' => array(
+      'label' => t('SOAP'),
+      'class' => 'RulesSOAPEndpoint',
+    ),
+  );
+}
+
+/**
+ * A remote endpoint types for invoking SOAP services.
+ */
+class RulesSOAPEndpoint implements RulesWebRemoteEndpointInterface {
+
+  /**
+   * @var RulesWebRemote
+   */
+  protected $remote, $url;
+
+  /**
+   * @var RestClient
+   */
+  protected  $client;
+
+  public function __construct($remote) {
+    $this->remote = $remote;
+    $this->url = $remote->url;
+  }
+
+  public function client() {
+    if (!isset($this->client)) {
+      $options['exceptions'] = TRUE;
+      if (!empty($this->remote->settings['options'])) {
+        $options += $this->remote->settings['options'];
+      }
+      // The url has to point to a WSDL file.
+      $this->client = new SOAPClient($this->url, $options);
+    }
+    return $this->client;
+  }
+
+  // This endpoint type doesn't provide events.
+  public function events() {}
+  public function subscribe($event) {}
+  public function unsubscribe($event) {}
+  
+  // We don't provide any entites, just register rules data types.
+  public function load($type, $id) {}
+  public function entities() {}
+
+  
+  public function dataTypes() {
+    if (!empty($this->remote->settings['data types'])) {
+      return $this->remote->settings['data types'];
+    }
+  }
+
+  public function actions() {
+    $actions = array();
+    foreach ($this->remote->settings['operations'] as $name => $operation) {
+      $actions[$name] = $operation += array(
+        'base' => 'rules_soap_call',
+        'named parameter' => TRUE,
+      );
+      $actions[$name]['parameter'] = array();
+      // Prefix operation parameter names to avoid name clashes.
+      foreach ((array)$operation['parameter'] as $param => $info) {
+        $actions[$name]['parameter']['param_' . $param] = $info;
+      }
+      $actions[$name]['parameter']['remote'] = array(
+        'type' => 'hidden',
+        'default value' => $this->remote->name,
+      );
+      $actions[$name]['parameter']['operation'] = array(
+        'type' => 'hidden',
+        'default value' => $name,
+      );
+      if (!empty($actions[$name]['provides'])) {
+        $orig_name = reset(array_keys($actions[$name]['provides']));
+        $actions[$name]['provides'] = array('var' => reset($actions[$name]['provides']));
+        $actions[$name]['provides']['var']['label'] = $orig_name;
+      }
+    }
+    return $actions;
+  }
+
+  public function conditions() {}
+}
+
+/**
+ * Action callback: Invoke a SOAP operation.
+ */
+function rules_soap_call($arguments, RulesPlugin $element) {
+  if ($remote = rules_web_remote_load($arguments['remote'])) {
+    $client = $remote->endpoint()->client();
+    try {
+      $soap_args = array();
+      foreach ($arguments as $name => $data) {
+        if (strpos($name, 'param_') === 0) {
+          // Remove the parameter name prefix 'param_'.
+          $soap_args[substr($name, 6)] = $data;
+        }
+      }
+      $return = $client->__soapCall($arguments['operation'], $soap_args);
+      return array('var' => $return);
+    }
+    catch (SoapFault $e) {
+      throw new RulesException('Error invoking the SOAP service of the remote %name: %error', array('%name' => $remote->label, '%error' => $e->getMessage()), $element, RulesLog::ERROR);
+    }
+  }
+  else {
+    throw new RulesException('The remote site %name cannot be found.', array('%name' => $arguments['remote']), $element, RulesLog::ERROR);
+  }
+}
