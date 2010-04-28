@@ -121,9 +121,9 @@ class RulesSOAPEndpoint implements RulesWebRemoteEndpointInterface {
         'default value' => $name,
       );
       if (!empty($actions[$name]['provides'])) {
-        $orig_name = reset(array_keys($actions[$name]['provides']));
+        $names = array_keys($actions[$name]['provides']);
         $actions[$name]['provides'] = array('var' => reset($actions[$name]['provides']));
-        $actions[$name]['provides']['var']['label'] = $orig_name;
+        $actions[$name]['provides']['var']['label'] = $names[0];
       }
     }
     return $actions;
