@@ -1,5 +1,5 @@
 ; $Id$
-name = Rules SOAP Support
+name = Rules Web SOAP Support
 description = A prototype implementing a SOAP endpoint and a example remote site using it.
 package = Rules Use Cases
 version = VERSION

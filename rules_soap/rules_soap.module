@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * @file Rules Web Test Module.
+ * @file Rules Web Remote SOAP Support.
  */
 
 /**
@@ -67,7 +67,7 @@ class RulesSOAPEndpoint implements RulesWebRemoteEndpointInterface {
    */
   protected  $client;
 
-  public function __construct($remote) {
+  public function __construct(RulesWebRemote $remote) {
     $this->remote = $remote;
     $this->url = $remote->url;
   }
@@ -130,6 +130,7 @@ class RulesSOAPEndpoint implements RulesWebRemoteEndpointInterface {
   }
 
   public function conditions() {}
+  public function formAlter(&$form, &$form_state) { }
 }
 
 /**
