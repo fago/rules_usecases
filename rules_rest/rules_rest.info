@@ -1,0 +1,9 @@
+; $Id$
+name = Rules Remote REST Support
+description = A prototype implementing a REST endpoint and a example remote site using it.
+package = Rules Use Cases
+version = VERSION
+core = 7.x
+files[] = rules_rest.module
+files[] = rules_rest.test
+dependencies[] = rules_web_remote

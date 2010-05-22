@@ -1,0 +1,46 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules REST Tests.
+ */
+
+class RulesRESTTestCase extends DrupalWebTestCase {
+
+  static function getInfo() {
+    return array(
+      'name' => 'Rules REST',
+      'description' => 'Tests invoking a RESTful service using a rules action.',
+      'group' => 'Rules',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('rules_rest');
+    RulesLog::logger()->clear();
+  }
+  
+  /**
+   * Tests invocing the google service, which is provided by the module as
+   * default remote site.
+   */
+  function testServiceInvocation() {
+    list($result) = rules_action('rules_web_google_translate', array(
+           'param_q:select' => 'text',
+           'param_langpair' => 'de|en',
+         ))->execute('Hallo Welt');
+    $this->assertEqual($result['translatedText'], 'Hello World', 'REST service invoked via the action.');
+    
+    // Test making use of the provided variable.
+    $rule = rule(array('text' => array('type' => 'text')));
+    $rule->action('rules_web_google_translate', array(
+           'param_q:select' => 'text',
+           'param_langpair' => 'de|en',
+         ))
+         ->action('drupal_message', array('message:select' => 'responsedata:translatedText'))
+         ->execute('Hallo Welt');
+    RulesLog::logger()->checkLog();
+    $msg = drupal_get_messages();
+    $this->assertEqual(array_pop($msg['status']), 'Hello World', 'REST service has been invoked.');
+  }
+}

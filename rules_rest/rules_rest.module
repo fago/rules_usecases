@@ -1,0 +1,182 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules Web Endpoint for invoking a RESTful service.
+ */
+
+/**
+ * Implements hook_default_rules_web_remote().
+ */
+function rules_rest_default_rules_web_remote() {
+  $remote = new RulesWebRemote();
+  $remote->name = 'google';
+  $remote->label = 'Google Ajax APIs';
+  $remote->url = 'http://ajax.googleapis.com/ajax/services/';
+  $remote->type = 'REST';
+  
+  // Add info about the REST service, which the user has to provide via the UI.
+  $operation['label'] = 'Translate text';
+  $operation['url'] = 'language/translate';
+  $operation['parameter']['q'] = array('type' => 'text', 'label' => 'Text');
+  $operation['parameter']['langpair'] = array(
+    'type' => 'text',
+    'label' => 'Language pair',
+    'description' => 'The language pair used for translating, such as de|en.',
+  );
+  // We have to specify the version 1.0
+  $operation['parameter']['v'] = array('type' => 'hidden', 'default value' => '1.0');
+  
+  $operation['provides']['responseData'] = array(
+    'type' => 'struct',
+    'label' => 'Translation result',
+    'data info' => array(
+      'properties' => array(
+        'translatedText' => array(
+          'type' => 'text',
+          'label' => 'Translated text',
+        ),
+      ),
+    ),
+  );
+  $remote->settings['operations']['translate'] = $operation;
+  $remotes[$remote->name] = $remote;
+  return $remotes;
+}
+
+/**
+ * Implements hook_rules_endpoint_types().
+ */
+function rules_rest_rules_endpoint_types() {
+  return array(
+    'REST' => array(
+      'label' => t('REST'),
+      'class' => 'RulesRESTEndpoint',
+    ),
+  );
+}
+
+/**
+ * A remote endpoint types for invoking REST services.
+ */
+class RulesRESTEndpoint implements RulesWebRemoteEndpointInterface {
+
+  /**
+   * @var RulesWebRemote
+   */
+  protected $remote, $url;
+
+  /**
+   * @var RestClient
+   */
+  protected  $client;
+
+  public function __construct(RulesWebRemote $remote) {
+    $this->remote = $remote;
+    $this->url = $remote->url;
+  }
+
+  public function client() {
+    if (!isset($this->client)) {
+      $this->client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
+      // Pass through additional curl options.
+      if (!empty($this->remote->settings['curl options'])) {
+        $this->client->curlOpts = $this->remote->settings['curl options'];
+      }
+    }
+    return $this->client;
+  }
+
+  // This endpoint type doesn't provide events.
+  public function events() {}
+  public function subscribe($event) {}
+  public function unsubscribe($event) {}
+  
+  // TODO: Add in order to support resources.
+  public function load($type, $id) {}
+  
+  
+  public function entities() {
+    if (!empty($this->remote->settings['resources'])) {
+      return $this->remote->settings['resources'];
+    }
+  }
+  
+  public function dataTypes() {
+    if (!empty($this->remote->settings['data types'])) {
+      return $this->remote->settings['data types'];
+    }
+  }
+
+  public function actions() {
+    $actions = array();
+    foreach ($this->remote->settings['operations'] as $name => $operation) {
+      $actions[$name] = $operation += array(
+        'base' => 'rules_rest_call',
+        'named parameter' => TRUE,
+      );
+      $actions[$name]['parameter'] = array();
+      // Prefix operation parameter names to avoid name clashes.
+      foreach ((array)$operation['parameter'] as $param => $info) {
+        $actions[$name]['parameter']['param_' . $param] = $info;
+      }
+      $actions[$name]['parameter']['remote'] = array(
+        'type' => 'hidden',
+        'default value' => $this->remote->name,
+      );
+      $actions[$name]['parameter']['url'] = array(
+        'type' => 'hidden',
+        'default value' => $operation['url'],
+      );
+      // Pass through provided variables as they are described, but ensure
+      // valid variable names.
+      // TODO: Use regex to enforce valid PHP variable name and/or map names?
+      if (!empty($actions[$name]['provides'])) {
+        foreach ($actions[$name]['provides'] as $var => $info) {
+          unset($actions[$name]['provides'][$var]);
+          $actions[$name]['provides'][strtolower($var)] = $info;
+        }
+      }
+    }
+    return $actions;
+  }
+
+  public function conditions() {}
+  public function formAlter(&$form, &$form_state) { }
+}
+
+/**
+ * Action callback: Invoke a REST service.
+ */
+function rules_rest_call($arguments, RulesPlugin $element) {
+  if ($remote = rules_web_remote_load($arguments['remote'])) {
+    $client = $remote->endpoint()->client();
+    try {
+      $rest_args = array();
+      foreach ($arguments as $name => $data) {
+        if (strpos($name, 'param_') === 0) {
+          // Remove the parameter name prefix 'param_'.
+          $rest_args[substr($name, 6)] = $data;
+        }
+      }
+      $return = $client->get($remote->url . $arguments['url'], $rest_args);
+      if (!empty($return) && is_array($return)) {
+        $vars = $element->providesVariables();
+        // Only pass through returned data matching the described variables.
+        foreach ($return as $name => $data) {
+          unset($return[$name]);
+          if (isset($vars[strtolower($name)])) {
+            $return[strtolower($name)] = $data;
+          }
+        }
+        return $return;
+      }
+    }
+    catch (RestClientException $e) {
+      throw new RulesException('Error invoking the REST service of the remote %name: %error', array('%name' => $remote->label, '%error' => $e->getMessage()), $element, RulesLog::ERROR);
+    }
+  }
+  else {
+    throw new RulesException('The remote site %name cannot be found.', array('%name' => $arguments['remote']), $element, RulesLog::ERROR);
+  }
+}
