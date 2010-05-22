@@ -147,7 +147,7 @@ function rules_soap_call($arguments, RulesPlugin $element) {
           $soap_args[substr($name, 6)] = $data;
         }
       }
-      $return = $client->$arguments['operation']($soap_args);
+      $return = $client->__call($arguments['operation'], $soap_args);
       return array('var' => $return);
     }
     catch (SoapFault $e) {
