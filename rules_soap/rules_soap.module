@@ -20,19 +20,17 @@ function rules_soap_default_rules_web_remote() {
   $operation['parameter']['address'] = array('type' => 'text');
   $operation['provides']['address_results'] = array(
     'type' => 'list<struct>',
-    'data info' => array(
-      'properties' => array(
-        'number' => array('type' => 'integer'),
-        'zip' => array('type' => 'integer'),
-        'suffix' => array('type' => 'text'),
-        'prefix' => array('type' => 'text'),
-        'type' => array('type' => 'text'),
-        'street' => array('type' => 'text'),
-        'state' => array('type' => 'text'),
-        'city' => array('type' => 'text'),
-        'lat' => array('type' => 'decimal'),
-        'long' => array('type' => 'decimal'),
-      ),
+    'property info' => array(
+      'number' => array('type' => 'integer'),
+      'zip' => array('type' => 'integer'),
+      'suffix' => array('type' => 'text'),
+      'prefix' => array('type' => 'text'),
+      'type' => array('type' => 'text'),
+      'street' => array('type' => 'text'),
+      'state' => array('type' => 'text'),
+      'city' => array('type' => 'text'),
+      'lat' => array('type' => 'decimal'),
+      'long' => array('type' => 'decimal'),
     ),
   );
   $remote->settings['operations']['geocode_address'] = $operation;

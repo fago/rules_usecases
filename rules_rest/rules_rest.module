@@ -30,12 +30,10 @@ function rules_rest_default_rules_web_remote() {
   $operation['provides']['responseData'] = array(
     'type' => 'struct',
     'label' => 'Translation result',
-    'data info' => array(
-      'properties' => array(
-        'translatedText' => array(
-          'type' => 'text',
-          'label' => 'Translated text',
-        ),
+    'property info' => array(
+      'translatedText' => array(
+        'type' => 'text',
+        'label' => 'Translated text',
       ),
     ),
   );
