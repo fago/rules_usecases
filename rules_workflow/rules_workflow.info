@@ -1,0 +1,9 @@
+; $Id$
+name = Rules Workflow
+description = A simple editorial workflow making use of revisions.
+package = Rules Use Cases
+version = VERSION
+core = 7.x
+files[] = rules_workflow.module
+files[] = rules_workflow.install
+dependencies[] = rules

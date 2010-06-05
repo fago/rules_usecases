@@ -1,0 +1,43 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Install, update and uninstall functions for the profile module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function rules_workflow_install() {
+  // Auto-create a field for the full name, if it doesn't exist yet.
+  if (!field_info_field('field_workflow')) {
+    $allowed_values = "work|Draft (needs work)
+review|Draft (needs review)
+published|Published";
+
+    $field = array(
+      'field_name' => 'field_workflow',
+      'type' => 'list_text',
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => $allowed_values,
+      ),
+    );
+    field_create_field($field);
+    $instance = array(
+      'entity_type' => 'node',
+      'field_name' => 'field_workflow',
+      'bundle' => 'article',
+      'label' => 'Worfklow state',
+      'description' => 'Any change to the workflow state will be logged.',
+      'widget' => array(
+        'type' => 'options_buttons',
+        'weight' => 0,
+      ),
+    );
+    field_create_instance($instance);
+    drupal_set_message(t('Created field %name and attached it to the article. In order to enable the workflow, attach the field to any content type.', array('%name' => 'field_workflow')));
+  }
+}
+

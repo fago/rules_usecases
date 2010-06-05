@@ -1,0 +1,39 @@
+<?php
+// $Id$
+
+/**
+ * @file Rules workflow use case.
+ */
+
+/**
+ * Implements hook_default_rules_configuration().
+ */
+function rules_workflow_default_rules_configuration() {
+  $rule = rules_reaction_rule();
+  $rule->label = 'Log initial workflow state';
+  $rule->active = TRUE;
+  $rule->event('node_presave')
+       ->condition('entity_has_field', array('entity:select' => 'node', 'field' => 'field_workflow'))
+       ->condition('entity_is_new', array('entity:select' => 'node'))
+       ->action('data_set', array(
+         'data:select' => 'node:log',
+         'value' => 'Initial workflow state: "[node:field-workflow]".',
+       ));
+  $configs['rules_workflow_init'] = $rule;
+  
+  $rule = rules_reaction_rule();
+  $rule->label = 'Log workflow state changes';
+  $rule->active = TRUE;
+  $rule->event('node_presave')
+       ->condition('entity_has_field', array('entity:select' => 'node', 'field' => 'field_workflow'))
+       ->condition(rules_condition('data_is', array('data:select' => 'node:field-workflow', 'value:select' => 'node_unchanged:field-workflow'))->negate())
+       ->action('data_set', array(
+         'data:select' => 'node:log',
+         'value' => 'The workflow state has been set from "[node_unchanged:field-workflow]" to "[node:field-workflow]".',
+       ))
+       ->action('data_set', array('data:select' => 'node:revision', 'value' => TRUE))
+       ->action('drupal_message', array('message' => 'Your changes to the workflow-state have been logged and a new revision has been created.'));
+  $configs['rules_workflow_transition'] = $rule;
+  
+  return $configs;
+}
