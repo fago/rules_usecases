@@ -32,7 +32,7 @@ function rules_workflow_default_rules_configuration() {
          'value' => 'The workflow state has been set from "[node_unchanged:field-workflow]" to "[node:field-workflow]".',
        ))
        ->action('data_set', array('data:select' => 'node:revision', 'value' => TRUE))
-       ->action('drupal_message', array('message' => 'Your changes to the workflow-state have been logged and a new revision has been created.'));
+       ->action('drupal_message', array('message' => 'Your changes to the workflow state have been logged and a new revision has been created.'));
   $configs['rules_workflow_transition'] = $rule;
   
   return $configs;
