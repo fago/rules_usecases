@@ -35,6 +35,7 @@ published|Published";
         'type' => 'options_buttons',
         'weight' => 0,
       ),
+      'default_value' => array(0 => array('value' => 'work')),
     );
     field_create_instance($instance);
     drupal_set_message(t('Created field %name and attached it to the article. In order to enable the workflow, attach the field to any content type.', array('%name' => 'field_workflow')));
