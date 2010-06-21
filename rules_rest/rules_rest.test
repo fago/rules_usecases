@@ -29,7 +29,7 @@ class RulesRESTTestCase extends DrupalWebTestCase {
            'param_q:select' => 'text',
            'param_langpair' => 'de|en',
          ))->execute('Hallo Welt');
-    $this->assertEqual($result['translatedText'], 'Hello World', 'REST service invoked via the action.');
+    $this->assertEqual($result['translatedText'], 'Hello world', 'REST service invoked via the action.');
     
     // Test making use of the provided variable.
     $rule = rule(array('text' => array('type' => 'text')));
@@ -41,6 +41,6 @@ class RulesRESTTestCase extends DrupalWebTestCase {
          ->execute('Hallo Welt');
     RulesLog::logger()->checkLog();
     $msg = drupal_get_messages();
-    $this->assertEqual(array_pop($msg['status']), 'Hello World', 'REST service has been invoked.');
+    $this->assertEqual(array_pop($msg['status']), 'Hello world', 'REST service has been invoked.');
   }
 }
