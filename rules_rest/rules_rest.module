@@ -14,7 +14,7 @@ function rules_rest_default_rules_web_remote() {
   $remote->label = 'Google Ajax APIs';
   $remote->url = 'http://ajax.googleapis.com/ajax/services/';
   $remote->type = 'REST';
-  
+
   // Add info about the REST service, which the user has to provide via the UI.
   $operation['label'] = 'Translate text';
   $operation['url'] = 'language/translate';
@@ -26,7 +26,7 @@ function rules_rest_default_rules_web_remote() {
   );
   // We have to specify the version 1.0
   $operation['parameter']['v'] = array('type' => 'hidden', 'default value' => '1.0');
-  
+
   $operation['provides']['responseData'] = array(
     'type' => 'struct',
     'label' => 'Translation result',
@@ -76,7 +76,12 @@ class RulesRESTEndpoint implements RulesWebRemoteEndpointInterface {
 
   public function client() {
     if (!isset($this->client)) {
-      $this->client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
+      if (!empty($this->remote->settings['formatter'])) {
+        $this->client = new RestClient(NULL, $this->remote->settings['formatter']);
+      }
+      else {
+        $this->client = new RestClient(NULL, new RestClientBaseFormatter(RestClientBaseFormatter::FORMAT_JSON));
+      }
       // Pass through additional curl options.
       if (!empty($this->remote->settings['curl options'])) {
         $this->client->curlOpts = $this->remote->settings['curl options'];
@@ -89,17 +94,17 @@ class RulesRESTEndpoint implements RulesWebRemoteEndpointInterface {
   public function events() {}
   public function subscribe($event) {}
   public function unsubscribe($event) {}
-  
+
   // TODO: Add in order to support resources.
   public function load($type, $id) {}
-  
-  
+
+
   public function entities() {
     if (!empty($this->remote->settings['resources'])) {
       return $this->remote->settings['resources'];
     }
   }
-  
+
   public function dataTypes() {
     if (!empty($this->remote->settings['data types'])) {
       return $this->remote->settings['data types'];
